@@ -7,6 +7,7 @@ from tbShop.items import TbshopItem
 from tbShop.settings import DEFAULT_REQUEST_HEADERS
 import logging
 import random
+import requests
 import urllib
 from scrapy import Selector
 
@@ -19,10 +20,9 @@ class TbshopSpider(scrapy.Spider):
     def parse(self, response):
         '''按城市、类别分别创建url'''
 
-        for index,dict_meta in enumerate(self.list_meta[80:100]):
+        for index,dict_meta in enumerate(self.list_meta[80:81]):
             logging.info('{}:{}'.format(index,dict_meta))
-            loc=dict_meta['province'] if dict_meta['city']=='全部' else dict_meta['city']
-            print(loc)
+            loc=dict_meta['province'].split(',')[0] if dict_meta['city']=='' else dict_meta['city'].split(',')[0]
             params_search = {
                 'q': '{} {}'.format(dict_meta['FirstCate'], dict_meta['SecondCate']),
                 # 'imgfile': '',
@@ -61,7 +61,6 @@ class TbshopSpider(scrapy.Spider):
         '''店铺详情页面数据清洗'''
 
         meta=response.meta
-        item=TbshopItem()
         html=response.text
         meta['openTime'] = ''
         meta['mainInfo'] = ''
@@ -70,7 +69,6 @@ class TbshopSpider(scrapy.Spider):
             #淘宝页面
             if '<span class="open-time">' in html:
                 meta['openTime'] = html.split('<span class="open-time">')[1].split('年')[0].strip()
-
         elif meta['isTmall'] == '1':
             #天猫页面
             sel = Selector(text=html)
@@ -87,28 +85,8 @@ class TbshopSpider(scrapy.Spider):
             except:
                 pass
 
-        item['_id']=meta['_id']
-        item['province']=meta['province']
-        item['city']=meta['city']
-        item['county']=''
-        item['FirstCate']=meta['FirstCate']
-        item['SecondCate']=meta['SecondCate']
-        item['headPicture']=meta['headPicture']
-        item['goodsNum']=meta['goodsNum']
-        item['shopName']=meta['shopName']
-        item['shopLink']=meta['shopLink']
-        item['locArea']=meta['locArea']
-        item['salesVolume']=meta['salesVolume']
-        item['score']=meta['score']
-        item['isTmall']=meta['isTmall']
-        item['shopRank']=meta['shopRank']
-        item['mainBusiness']=meta['mainBusiness']
-        item['itemId']=meta['itemId']
-        item['goodsShow']=meta['goodsShow']
-        item['icon']=meta['icon']
-        item['urlReferer']=meta['urlReferer']
-        item['sellerName']=meta['sellerName']
-        yield item
+        self.save(meta)
+
     def jiexi(self,auction,dict_shop):
         '''店铺搜索页面数据清洗'''
         shopName = auction['title']
@@ -178,9 +156,10 @@ class TbshopSpider(scrapy.Spider):
     def totalPage(self,url,dict_meta):
 
         try:
-            time.sleep(random.uniform(3,5))
-            headers=DEFAULT_REQUEST_HEADERS.update(cookie=random.choice(LIST_COOKIE))
-            html=XH_REQ(url=url,headers=headers,data='')
+            time.sleep(random.uniform(20,40))
+            DEFAULT_REQUEST_HEADERS.update(cookie=random.choice(LIST_COOKIE))
+
+            html=XH_REQ(url=url,headers=DEFAULT_REQUEST_HEADERS,data='')
             html_config = html.split('g_page_config =')[1].split('g_srp_loadCss()')[0].strip()[:-1]
             dict_config = json.loads(html_config)
             totalCount = int(dict_config['mods']['sortbar']['data']['pager']['totalCount'])
@@ -191,9 +170,37 @@ class TbshopSpider(scrapy.Spider):
             return totalPage
         except:
             logging.error('词条获取失败：{}'.format(dict_meta))
-            pass
+            return 0
 
+    def save(self,meta):
+        item=TbshopItem()
+        item['shopId'] = meta['_id']
+        item['channelId'] = 'TB'
+        item['province'] = meta['province'].split(',')[1]
+        item['city'] = meta['city'].split(',')[1]
+        item['county'] = ''
+        item['category'] = meta['FirstCate']
+        item['secondCategory'] = meta['SecondCate']
+        item['company'] = meta['shopName']
+        item['website'] = meta['shopLink']
+        item['address'] = meta['locArea']
+        item['name'] = ''
+        item['phone'] = ''
+        item['aliwangwang'] = meta['sellerName']+','+meta['itemId']
+        item['mainProduct'] = meta['mainBusiness']
+        item['favorableRate'] = meta['goodratePercent']
+        item['serviceTags'] = meta['icon']
+        item['starLevel'] = meta['shopRank']
+        item['certificate'] = meta['mainInfo']
+        item['dsr'] = meta['score']
+        item['popularProduct'] = meta['goodsShow']
+        item['builtShopYear'] = meta['openTime']
+        item['itemsNumber'] = meta['goodsNum']
+        item['grossSales'] = meta['salesVolume']
+        item['shopType'] = meta['isTmall']
 
+        logging.info(item)
+        yield item
 
 
 
@@ -207,6 +214,8 @@ class TbshopSpider(scrapy.Spider):
 
 
 if __name__ == '__main__':
+    url='https://shopsearch.taobao.com/search?ie=utf8&style=grid&js=1&loc=%E7%9F%B3%E5%AE%B6%E5%BA%84&initiative_id=staobaoz_20190627&q=%E4%B9%90%E5%99%A8+%E5%B0%A4%E5%85%8B%E9%87%8C%E9%87%8C'
 
-
+    a=TbshopSpider().totalPage(url=url,dict_meta='')
+    print(a)
     pass

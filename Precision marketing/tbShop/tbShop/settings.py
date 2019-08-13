@@ -27,7 +27,9 @@ LOG_LEVEL = "INFO"
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-#CONCURRENT_REQUESTS = 32
+
+'''线程数'''
+CONCURRENT_REQUESTS = 2
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://doc.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -80,8 +82,8 @@ ITEM_PIPELINES = {
 
 '''限速'''
 AUTOTHROTTLE_ENABLED = True
-AUTOTHROTTLE_START_DELAY = 3  #初始下载延时
-DOWNLOAD_DELAY = 10            #请求间隔时间
+AUTOTHROTTLE_START_DELAY = 3   #初始下载延时
+DOWNLOAD_DELAY = 100           #请求间隔时间
 
 '''数据库'''
 MONGO_URI = 'mongodb://localhost:27017'

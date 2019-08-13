@@ -10,7 +10,7 @@ from aliShop.items import AlishopItem
 from scrapy import Selector
 import json
 import time
-
+from datetime import datetime
 
 class AlishopSpider(scrapy.Spider):
     name = 'alishop'
@@ -21,11 +21,11 @@ class AlishopSpider(scrapy.Spider):
     def parse(self, response):
         '''按城市、类别分别创建url'''
 
-        for index, dict_meta in enumerate(self.list_meta[510:550]):
+        for index, dict_meta in enumerate(self.list_meta[800:1300]):
             logging.info('{}:{}'.format(index, dict_meta))
             keywords=quote((dict_meta['SecondCate']+' '+dict_meta['ThirdCate']).encode('gbk'))
-            province=quote((dict_meta['province']).encode('gbk'))
-            city=quote((dict_meta['city']).encode('gbk'))
+            province=quote((dict_meta['province'].split(',')[0]).encode('gbk'))
+            city=quote((dict_meta['city'].split(',')[0]).encode('gbk'))
             params_search = {
                 'filt':'y',
                 'n': 'y',
@@ -64,54 +64,6 @@ class AlishopSpider(scrapy.Spider):
                 dict_shop['urlProfile'] = dict_shop['shopLink'].split('?')[0] + '/page/creditdetail.htm?'
 
             yield scrapy.Request(url=url_contactinfo,meta=dict_shop,callback=self.contactinfo,priority=20)
-    def shop_info(self,item,meta):
-
-        item['_id']=meta['_id']
-        item['province']=meta['province']
-        item['city']=meta['city']
-        item['FirstCate']=meta['FirstCate']
-        item['SecondCate']=meta['SecondCate']
-        item['ThirdCate']=meta['ThirdCate']
-        item['companyName']=meta['companyName']
-        item['shopName']=meta['shopName']
-        item['shopLink']=meta['shopLink']
-        item['locArea']=meta['locArea']
-        item['itemId']=meta['itemId']
-        item['honestyMember']=meta['honestyMember']
-        item['honestyYear']=meta['honestyYear']
-        item['tipTitle']=meta['tipTitle']
-        item['mainProduct']=meta['mainProduct']
-        item['processingMethods']=meta['processingMethods']
-        item['companyNumber']=meta['companyNumber']
-        item['factoryArea']=meta['factoryArea']
-        item['certificate']=meta['certificate']
-        item['factoryReport']=meta['factoryReport']
-        item['hotProduct']=meta['hotProduct']
-        item['businessModel']=meta['businessModel']
-        item['urlReferer']=meta['urlReferer']
-
-        item['contactSeller']=meta['contactSeller']
-        item['sex']=meta['sex']
-        item['position']=meta['position']
-        item['department']=meta['department']
-        item['mobilephone']=meta['mobilephone']
-        item['phone']=meta['phone']
-        item['wangWang']=meta['wangWang']
-        item['fax']=meta['fax']
-        item['medal']=meta['medal']
-        item['turnaroundRate']=meta['turnaroundRate']
-        item['grade']=meta['grade']
-
-        item['registeredCapital']=meta['registeredCapital']
-        item['representative']=meta['representative']
-        item['scope']=meta['scope']
-        item['foundedTime']=meta['foundedTime']
-        item['address']=meta['address']
-        item['integrityIndex']=meta['integrityIndex']
-        item['totalVolume']=meta['totalVolume']
-        item['totalBuyer']=meta['totalBuyer']
-
-        return item
     def contactinfo(self,response):
         logging.info(response.url)
 
@@ -127,9 +79,9 @@ class AlishopSpider(scrapy.Spider):
         except:
             meta['wangWang'] = ''
         try:
-            meta['medal'] = str(len(text.split('交易勋章-')[1].split('级')[0]))
+            meta['medal'] = len(text.split('交易勋章-')[1].split('级')[0])
         except:
-            meta['medal'] = '0'
+            pass
         try:
             meta['grade'] = {}
             meta['grade']['goodsDescription'] = ''
@@ -141,20 +93,23 @@ class AlishopSpider(scrapy.Spider):
                 value = description.xpath('string(div[2]/div[@style="display:none"]/span)').extract()[0].strip()
                 type = description.xpath('string(div[2]/div[@style="display:none"]/@class)').extract()[0].strip()
                 if '货描' in name:
-                    if 'higher' in type:
-                        meta['grade']['goodsDescription'] = '低于同行：' + value
-                    else:
-                        meta['grade']['goodsDescription'] = '高于同行：' + value
+                    if value != '':
+                        if 'higher' in type:
+                            meta['grade']['goodsDescription'] = '低于同行：' + value
+                        else:
+                            meta['grade']['goodsDescription'] = '高于同行：' + value
                 elif '响应' in name:
-                    if 'higher' in type:
-                        meta['grade']['response'] = '低于同行：' + value
-                    else:
-                        meta['grade']['response'] = '高于同行：' + value
+                    if value != '':
+                        if 'higher' in type:
+                            meta['grade']['response'] = '低于同行：' + value
+                        else:
+                            meta['grade']['response'] = '高于同行：' + value
                 elif '发货' in name:
-                    if 'higher' in type:
-                        meta['grade']['delivery'] = '低于同行：' + value
-                    else:
-                        meta['grade']['delivery'] = '高于同行：' + value
+                    if value != '':
+                        if 'higher' in type:
+                            meta['grade']['delivery'] = '低于同行：' + value
+                        else:
+                            meta['grade']['delivery'] = '高于同行：' + value
                 elif '回头率' in name:
                     meta['turnaroundRate'] = description.xpath('string(div[2]/span[2])').extract()[
                         0].strip()
@@ -197,85 +152,100 @@ class AlishopSpider(scrapy.Spider):
         meta=self.profile(meta)
         item = AlishopItem()
         item = self.shop_info(item, meta)
+        logging.info(item)
         yield item
     def profile(self,meta):
-        time.sleep(random.uniform(3,5))
+        time.sleep(random.uniform(30,50))
         url_profile=meta['urlProfile']
+        cookie=random.choice(LIST_COOKIE)
         headers={
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
         'accept-encoding': 'gzip, deflate, br',
         'accept-language': 'zh-CN,zh;q=0.9',
-        'cookie': random.choice(LIST_COOKIE),
+        'cookie': cookie,
         'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36',
         }
         html=XH_REQ_1(url=url_profile,headers=headers,data='')
-        sel = Selector(text=html)
-        meta['foundedTime'] = ''
-        for li in sel.xpath('//div[@class="info-box info-right"]/table/tr'):
-            try:
-                tb_key = li.xpath('string(td[@class="tb-key"]/p)').extract()[0].strip()
-                tb_value = li.xpath('string(td[@class="tb-info tb-value"]//span[@class="tb-value-data"])').extract()[
-                    0].strip()
-                if '成立时间' in tb_key:
-                    try:
-                        year = tb_value.split('年')[0]
-                        month = tb_value.split('年')[1].split('月')[0]
-                        day = tb_value.split('月')[1].split('日')[0]
-                        meta['foundedTime'] = '{}-{}-{}'.format(year, month, day)
-                    except:
-                        pass
-                elif '注册资本' in tb_key:
-                    meta['registeredCapital'] = tb_value
-                elif '经营范围' in tb_key:
-                    meta['scope'] = tb_value
-                elif '注册地址' in tb_key:
-                    meta['address'] = tb_value
+        if '1688/淘宝会员（仅限会员名）请在此登录' not in html:
+            sel = Selector(text=html)
+            meta['foundedTime'] = ''
+            meta['scope']=''
+            meta['registeredCapital']=''
+            meta['address']=''
+            for li in sel.xpath('//div[@class="info-box info-right"]/table/tr'):
+                try:
+                    tb_key = li.xpath('string(td[@class="tb-key"]/p)').extract()[0].strip()
+                    tb_value = li.xpath('string(td[@class="tb-info tb-value"]//span[@class="tb-value-data"])').extract()[
+                        0].strip()
+                    if '成立时间' in tb_key:
+                        try:
+                            year = tb_value.split('年')[0]
+                            month = tb_value.split('年')[1].split('月')[0]
+                            day = tb_value.split('月')[1].split('日')[0]
+                            meta['foundedTime'] = '{}-{}-{}'.format(year, month, day)
+                        except:
+                            pass
+                    elif '注册资本' in tb_key:
+                        meta['registeredCapital'] = tb_value
+                    elif '经营范围' in tb_key:
+                        meta['scope'] = tb_value
+                    elif '注册地址' in tb_key:
+                        meta['address'] = tb_value
 
+                except:
+                    pass
+            meta['honestyNumber'] = ''
+            meta['totalVolume'] = ''
+            meta['totalBuyer'] = ''
+            meta['repeatedRate'] = ''
+            meta['refundRate'] = ''
+            meta['serviceRate'] = ''
+            meta['disputeRate'] = ''
+
+            for rise in sel.xpath('//div[@id="J_CompanyTradeCreditRecord"]/ul/li'):
+                try:
+                    record_name = rise.xpath('string(p[@class="record-name"])').extract()[0].strip()
+                    record_num = rise.xpath('string(p[2])').extract()[0].strip()
+                    if '累计成交数' in record_name:
+                        meta['totalVolume'] = record_num
+                    elif '累计买家数' in record_name:
+                        meta['totalBuyer'] = record_num
+                    elif '重复采购率' in record_name:
+                        meta['repeatedRate'] = record_num
+                    elif '近90天退款率' in record_name:
+                        meta['refundRate'] = record_num
+                    elif '近90天客服介入率' in record_name:
+                        meta['serviceRate'] = record_num
+                    elif '近90天纠纷率' in record_name:
+                        meta['disputeRate'] = record_num
+                except:
+                    pass
+
+            meta['representative']=''
+            meta['integrityIndex']=''
+
+            try:
+                url_xinyong = sel.xpath('string(//div[@class="credit-open-view"]/iframe/@src)').extract()[0].strip()
+                acnt =url_xinyong.split('acnt=')[1].split('&')[0].strip()
+                logging.info('acnt:{}'.format(acnt))
+                url_score='https://xinyong.1688.com/credit/score/get.json?acnt={}'.format(acnt)
+                del headers['cookie']
+                html_score=XH_REQ(url=url_score,headers=headers,data='')
+                dict_score=json.loads(html_score)
+                meta['representative']=dict_score['data']['score']['legalOwnerName']
+                meta['integrityIndex']=dict_score['data']['score']['creditScore']
             except:
                 pass
-        meta['honestyNumber'] = ''
-        meta['totalVolume'] = ''
-        meta['totalBuyer'] = ''
-        meta['repeatedRate'] = ''
-        meta['refundRate'] = ''
-        meta['serviceRate'] = ''
-        meta['disputeRate'] = ''
 
-        for rise in sel.xpath('//div[@id="J_CompanyTradeCreditRecord"]/ul/li'):
-            try:
-                record_name = rise.xpath('string(p[@class="record-name"])').extract()[0].strip()
-                record_num = rise.xpath('string(p[2])').extract()[0].strip()
-                if '累计成交数' in record_name:
-                    meta['totalVolume'] = record_num
-                elif '累计买家数' in record_name:
-                    meta['totalBuyer'] = record_num
-                elif '重复采购率' in record_name:
-                    meta['repeatedRate'] = record_num
-                elif '近90天退款率' in record_name:
-                    meta['refundRate'] = record_num
-                elif '近90天客服介入率' in record_name:
-                    meta['serviceRate'] = record_num
-                elif '近90天纠纷率' in record_name:
-                    meta['disputeRate'] = record_num
-            except:
-                pass
+            if '登录后可见' in meta['mobilephone'] or meta['mobilephone']=='':
+                mobilephone=sel.xpath('string(//input[@name="hiddenMobileNo"]/@value)').extract()[0].strip()
+                meta['mobilephone']=mobilephone
+            if meta['phone']=='':
+                phone = sel.xpath('string(//span[@class="tip-info phone-num"])').extract()[0].strip()
+                meta['phone'] = phone.replace('固话：', '').strip()
 
-        meta['representative']=''
-        meta['integrityIndex']=''
-
-        try:
-            url_xinyong = sel.xpath('string(//div[@class="credit-open-view"]/iframe/@src)').extract()[0].strip()
-            acnt =url_xinyong.split('acnt=')[1].split('&')[0].strip()
-            logging.info('acnt:{}'.format(acnt))
-            url_score='https://xinyong.1688.com/credit/score/get.json?acnt={}'.format(acnt)
-            del headers['cookie']
-            html_score=XH_REQ(url=url_score,headers=headers,data='')
-            dict_score=json.loads(html_score)
-            meta['representative']=dict_score['data']['score']['legalOwnerName']
-            meta['integrityIndex']=dict_score['data']['score']['creditScore']
-        except:
-            pass
-
+        else:
+            logging.info('账号登录状态失效:{}'.format(cookie))
         return meta
     def jixi(self,company_item):
 
@@ -290,9 +260,9 @@ class AlishopSpider(scrapy.Spider):
         dict_shop['itemId'] = company_item.xpath('string(@itemid)').extract()[0].strip()  # 旺旺id
 
         if '阿里巴巴建议您优先选择诚信通会员' in company_item.extract():
-            dict_shop['honestyMember'] = '1'  # 诚信通会员
+            dict_shop['honestyMember'] = 1  # 诚信通会员
         else:
-            dict_shop['honestyMember'] = '0'
+            dict_shop['honestyMember'] = 0
         dict_shop['tipTitle'] = []
         dict_shop['honestyYear'] = '0'
         for title in company_item.xpath('div/div/div[@class="list-item-icons"]/a'):
@@ -320,11 +290,11 @@ class AlishopSpider(scrapy.Spider):
         except:
             dict_shop['locArea'] = ''
         try:
-            dict_shop['companyNumber'] = \
-            company_item.xpath('string(div/div/div[@class="list-item-detail"]/div/div[3]/a)').extract()[0].replace(
+            companyNumber= company_item.xpath('string(div/div/div[@class="list-item-detail"]/div/div[3]/a)').extract()[0].replace(
                 ' ', '')
+            dict_shop['companyNumber'] =companyNumber.replace('人','').strip()
         except:
-            dict_shop['companyNumber'] = ''
+            pass
         try:
             dict_shop['certificate'] = company_item.xpath(
                 'string(div/div/div[@class="list-item-detail"]/div/div[4]/a[@offer-stat="certificate"]/@href)').extract()[
@@ -375,9 +345,14 @@ class AlishopSpider(scrapy.Spider):
                             dict_hot['picture'] = li.xpath('string(a/img/@src)').extract()[0].strip()
                     except:
                         pass
-                    dict_hot['title'] = li.xpath('string(a/img/@alt)').extract()[0].strip()
-                    dict_hot['price'] = li.xpath('string(div/span[@class="price"]/@title)').extract()[0].strip()
-                    dict_hot['volume'] = li.xpath('string(div/span[@class="volume"]/@title)').extract()[0].strip()
+                    dict_hot['name'] = li.xpath('string(a/img/@alt)').extract()[0].strip()
+                    price= li.xpath('string(div/span[@class="price"]/@title)').extract()[0].strip()
+                    try:
+                        if price != '':
+                            dict_hot['price'] = float(price.replace('￥', '').strip())
+                    except:
+                        pass
+
                     dict_shop['hotProduct'].append(dict_hot)
                 except:
                     pass
@@ -391,6 +366,8 @@ class AlishopSpider(scrapy.Spider):
             sel=Selector(text=html)
             if '缩短或修改您的搜索词，重新搜索'in html:
                 totalPage=0
+            elif '在您的筛选条件下，没找到' in html:
+                totalPage = 0
             elif '下一页' in html:
                 totalPage = sel.xpath('string(//div[@class="page-op"]/span[@class="total-page"])').extract()[0].strip()
                 totalPage = int(totalPage.replace('共', '').replace('页', ''))
@@ -400,7 +377,90 @@ class AlishopSpider(scrapy.Spider):
         except:
             logging.error('词条获取失败：{}'.format(dict_meta))
             pass
+    def shop_info(self,item,meta):
+
+        item['shopId']=meta['_id']
+        item['channelId']='YLBB'
+        item['province']=meta['province'].split(',')[1]
+        item['city']=meta['city'].split(',')[1]
+        item['county']=''
+        item['category']=meta['FirstCate']
+        item['secondCategory']=meta['SecondCate']
+        item['thirdCategory']=meta['ThirdCate']
+        item['company']=meta['companyName']
+        item['website']=meta['shopLink']
+        item['address']=meta['locArea']
+        item['name']=meta['contactSeller']
+        if  '登录后可见' in meta['mobilephone']:
+            item['phone']=''
+        else:
+            item['phone'] = meta['mobilephone']
+
+        item['aliwangwang']=meta['wangWang']
+        item['mainProduct']=meta['mainProduct']
+        item['serviceTags']=','.join(meta['tipTitle'])
+        item['certificate']=meta['certificate']
+        item['dsr']=json.dumps(meta['grade'],ensure_ascii=False)
+        item['legalRepresentative']=meta['representative']
+        item['fax']=meta['fax']
+        item['popularProducts']=meta['hotProduct']
+        item['businessScope']=meta['scope']
+        try:
+            item['tradingMedal']=meta['medal']
+        except:
+            pass
+        item['registeredCapital']=meta['registeredCapital']
+        if '先生' in meta['sex']:
+            item['gender']=1
+        elif '女士' in meta['sex']:
+            item['gender']=0
+        item['shopName']=meta['shopName']
+        item['duty']=meta['position']
+        item['registeredAddress']=meta['address']
+        item['alternatePhone']=meta['phone']
+        item['aliIntegrityIndex']=meta['integrityIndex']
+        if meta['totalVolume'] != '':
+            item['transactionNumber']=int(meta['totalVolume'].strip())
+        if meta['totalBuyer'] !='':
+            item['purchaserNumber']=int(meta['totalBuyer'].strip())
+        if meta['turnaroundRate'] !='':
+            item['secondGlanceRate']=float('%.3f'% int(meta['turnaroundRate'].replace('%','')))/100
+        item['businessModel']=meta['businessModel']
+        item['department']=meta['department']
+        item['isChengxinTongMember']=meta['honestyMember']
+        if meta['honestyMember'] == 1 and meta['honestyYear'] !='':
+            item['chengxinTongYear']=int(datetime.now().strftime('%Y'))-int(meta['honestyYear'])
+        item['processingMethod']=meta['processingMethods']
+
+        try:
+            if '-' in meta['companyNumber']:
+                number = (int(meta['companyNumber'].split('-')[0])+int(meta['companyNumber'].split('-')[1]))/2
+            else:
+                number = int(meta['companyNumber'])
+            if number <5:
+                item['employeesNumber']=1
+            elif  5<=number<51:
+                item['employeesNumber'] = 2
+            elif  50<number<101:
+                item['employeesNumber'] = 3
+            elif  100<number<501:
+                item['employeesNumber'] = 4
+            elif  500<number<1001:
+                item['employeesNumber'] = 5
+            elif  1000<number:
+                item['employeesNumber'] = 6
+        except:
+            pass
+
+        item['factoryArea']=meta['factoryArea']
+        item['authentication']=meta['factoryReport']
+        item['weekCalledNumber']=0
+
+        logging.info(meta['urlReferer'])
+
+        return item
 
 
 if __name__ == '__main__':
     pass
+

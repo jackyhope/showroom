@@ -25,7 +25,7 @@ LOG_LEVEL = "INFO"
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-#CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 3
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://doc.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -66,9 +66,9 @@ DEFAULT_REQUEST_HEADERS = {
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 
 '''代理'''
-# DOWNLOADER_MIDDLEWARES = {
-#    'aliShop.middlewares.ProxyMiddleware': 1,
-# }
+DOWNLOADER_MIDDLEWARES = {
+   'aliShop.middlewares.ProxyMiddleware': 1,
+}
 
 '''限速'''
 AUTOTHROTTLE_ENABLED = True

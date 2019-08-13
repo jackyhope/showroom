@@ -106,8 +106,8 @@ class AlishopDownloaderMiddleware(object):
 proxyServer = "http://http-dyn.abuyun.com:9020"
 
 # 代理隧道验证信息
-proxyUser = "user"
-proxyPass = "password"
+proxyUser = "H889BT3GSSBG3U6D"
+proxyPass = "C4E4EA69296C97B8"
 
 proxyAuth = "Basic " + base64.urlsafe_b64encode(bytes((proxyUser + ":" + proxyPass), "ascii")).decode("utf8")
 

@@ -36,28 +36,3 @@
     hotProduct = scrapy.Field()        #热门产品（产品图片、对应价格、产品名称）
     businessModel = scrapy.Field()     #经营模式
     urlReferer = scrapy.Field()        #搜索页面地址
-
-    '''店铺联系方式数据'''
-
-    contactSeller=scrapy.Field()       #联系人
-    sex=scrapy.Field()                 #性别
-    position=scrapy.Field()            #职务
-    department=scrapy.Field()          #部门
-    mobilephone=scrapy.Field()         #移动电话
-    phone=scrapy.Field()               #固话
-    wangWang=scrapy.Field()            #旺旺名
-    fax=scrapy.Field()                 #传真
-    medal=scrapy.Field()               #交易勋章
-    turnaroundRate=scrapy.Field()      #回头率
-    grade=scrapy.Field()               #店铺动态评分（毫描相符、响应速度、发货速度）
-
-    '''店铺档案数据'''
-
-    registeredCapital=scrapy.Field()   #注册资本
-    representative=scrapy.Field()      #法定代表人
-    scope=scrapy.Field()               #经营范围
-    foundedTime=scrapy.Field()         #成立时间
-    address=scrapy.Field()             #注册地址
-    integrityIndex=scrapy.Field()      #阿里巴巴诚信指数
-    totalVolume=scrapy.Field()         #成交数
-    totalBuyer=scrapy.Field()          #买家数
